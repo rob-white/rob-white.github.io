@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
-    <title>Reusable Chart Example 1</title>
+    <title>Reusable Chart Example 2</title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -45,38 +45,43 @@
 <body>
 <div id="tab-container" class="container-fluid">
     <ul class="nav nav-tabs" id="tabs">
-        <li id="example-1-tab">
-            <a href="#example-1" data-toggle="tab">Example 1</a>
+        <li id="example-2-tab">
+            <a href="#example-2" data-toggle="tab">Example 2</a>
         </li>
     </ul><!--/#tabs -->
     <div class="tab-content">
-        <div class="tab-pane" id="example-1">
+        <div class="tab-pane" id="example-2">
             <form class="query-settings form-inline">
-                <button id="example-1-query-btn" type="submit" class="btn">Refresh Data</button>
+                <button id="example-2-query-btn" type="submit" class="btn">Refresh Data</button>
+                <select id="example-2-bartype-select">
+                    <option value="stacked">Stacked</option>
+                    <option value="grouped">Grouped</option>
+                </select>
             </form>
             <div class="row-fluid">
                 <div class="span7">
                     <div class="row-fluid">
-                        <div id="example-1-chart" class="span10"></div>
-                        <div id="example-1-legend" class="span2"></div>
+                        <div id="example-2-chart" class="span10"></div>
+                        <div id="example-2-legend" class="span2"></div>
                     </div>
                 </div>
                 <div class="span5">
                     <h3 class="text-center">Overview</h3>
                     <hr/>
-                    <a href="https://github.com/rob-white/d3-reusable-charts/blob/master/d3-reusable-charts/examples/example-1.htm">Source Code on Github</a>
+                    <a href="https://github.com/rob-white/d3-reusable-charts/blob/master/d3-reusable-charts/examples/example-2.htm">Source Code on Github</a>
                     <hr/>
-                    <p><b>Scatter Chart Example</b></p>
+                    <p><b>Bar Chart Example</b></p>
                     <ul>
-                        <li>Selectable legend that hides/shows data points</li>
+                        <li>Animate between Stacked and Grouped bars</li>
+                        <li>Selectable legend that hides/shows bars</li>
                         <li>Refresh data and reload chart with new data</li>
-                        <li>Animated movement of chart elements when data changes</li>
-                        <li>Bootstrap tooltip with data point information</li>
+                        <li>Animated movement of bars when data changes</li>
+                        <li>Bootstrap tooltip with bar information</li>
                         <li>Auto-resize on window resize</li>
                     </ul>
                 </div>
             </div>
-        </div><!--/#example-1 -->
+        </div><!--/#example-2 -->
     </div><!--/.tab-content -->
 </div><!--/.tab-content -->
 
@@ -92,10 +97,10 @@
 <!-- Underscore Dependency -->
 <script src="../js/underscore/underscore.js?v=1.0" type="text/javascript"></script>
 <!-- Reusable charts using d3.js -->
-<script src="../reusable.scatterchart.js?v=1.0" type="text/javascript"></script>
+<script src="../reusable.barchart.js?v=1.0" type="text/javascript"></script>
 
 <script type="text/javascript">
-    // Example 1
+    // Example 2
     $(document).ready(function () {
         // When jQuery's ready, initialize the example and show the tab
         var example = Example().init().show();
@@ -108,11 +113,12 @@
     function Example() {
 
         var $el = {
-            tab: $('#example-1-tab a'),
-            chartContainer: $('#example-1-chart'),
-            queryBtn: $('#example-1-query-btn')
+            tab: $('#example-2-tab a'),
+            chartContainer: $('#example-2-chart'),
+            bartypeSelect: $('#example-2-bartype-select'),
+            queryBtn: $('#example-2-query-btn')
         },
-        dateFormat = d3.time.format("%m/%d/%Y %H:%M:%S"),
+        dateFormat = d3.time.format("%m/%d/%Y"),
         chartHeight = 300,
         chart;
 
@@ -125,7 +131,13 @@
             // Allow buttons to respond to on-click event
             $el.queryBtn.on('click', function (e) {
                 e.preventDefault();
+                $(this).blur();
                 queryData();
+            });
+
+            $el.bartypeSelect.on('change', function(e){
+                $(this).blur();
+                resizePageElements();
             });
 
             // When this tab is shown to the user,
@@ -164,7 +176,7 @@
         function queryData() {
             enablePageLoading();
             $.ajax({
-                url: "http://example.url.com/example1.json",
+                url: "http://example.url.com/example2.json",
                 type: "GET",
                 async: true,
                 fake: true,
@@ -177,18 +189,22 @@
 
         // Code to render the chart
         function renderChart(data){
-            chart = ScatterChart()
+            var sumData = summarizeData(data, {
+                x: 'date',
+                y: 'score',
+                group: 'gender',
+                calc: 'avg'
+            });
+
+            chart = BarChart()
                 .rootNode(d3.select('#tab-container')) // For tooltip
+                .type($el.bartypeSelect.val())
                 .width($el.chartContainer.width())
                 .height(chartHeight)
                 .margin({ top: 10, right: 5, bottom: 40, left: 30 })
-                .dataId(function(d){
-                    // Column that makes a row unique
-                    return d['id'];
-                })
                 .x(function (d) {
                     // X axis value column
-                    return dateFormat.parse(d['date']);
+                    return d['date'];
                 })
                 .y(function (d) {
                     // Y axis value column
@@ -196,24 +212,65 @@
                 })
                 .xTickFormat(function (d) {
                     var format = d3.time.format('%m/%d');
-                    return format(d);
+                    return format(dateFormat.parse(d));
                 })
                 .color(d3.scale.category10())
                 .yAxisLabel('Score')
                 .xAxisLabel('Date')
                 .showLegend(true)
-                .showGrid(true)
-                .legendContainer('#example-1-legend')
+                .legendContainer('#example-2-legend')
                 .groupBy(function (d) {
                     // Colors data/creates legend by this column
                     return d['gender'];
                 });
 
             d3.select('#' + $el.chartContainer.attr('id'))
-                .datum(data)
+                .datum(sumData)
                 .call(chart);
+        }
 
-            resizePageElements();
+        // Summarize the data to work with the chart module
+        function summarizeData(data, settings) {
+            var x = settings['x'],
+                y = settings['y'],
+                group = settings['group'],
+                calc = settings['calc'];
+
+            var groupedData = _.groupBy(data, function (d) {
+                return group == 'all' ? d[x] : d[x] + '-' + d[group];
+            });
+            var entries = d3.entries(groupedData);
+
+            var sData = [];
+            entries.forEach(function (item) {
+                var g = item.key,
+                        values = item.value,
+                        row = {};
+
+                var yValue = _.reduce(values, function (memo, item) {
+                    return calc == 'count' ? memo + 1 : memo + item[y];
+                }, 0);
+                row[x] = values[0][x];
+
+                if (calc == 'count') {
+                    row['count'] = yValue;
+                }
+                else if (calc == 'avg') {
+                    var avg = yValue / values.length;
+                    row[y] = parseFloat(avg.toFixed(2));
+                }
+                else {
+                    // Sum
+                    row[y] = yValue;
+                }
+
+                row[group] = values[0][group];
+                sData.push(row);
+            });
+
+            sData = _.sortBy(sData, function (item) { return item[x] + '-' + item[group]; });
+
+            return sData;
         }
 
         // Resize width of chart when pages resizes
@@ -221,10 +278,11 @@
             if(chart){
                 d3.select('#' + $el.chartContainer.attr('id'))
                     .call(chart
+                        .type($el.bartypeSelect.val())
                         .width($el.chartContainer.width())
                         .height(chartHeight)
                         .x(function (d) {
-                            return dateFormat.parse(d['date']);
+                            return d['date'];
                         })
                         .y(function (d) {
                             return d['score'];
